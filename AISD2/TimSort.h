@@ -12,7 +12,7 @@ public:
     size_t getMinrun(size_t n);
     void insertionSort(std::vector<T>& arr, size_t left, size_t right);
     void merge(std::vector<T>& arr, size_t leftStart, size_t mid, size_t rightEnd);
-    size_t gallopSearch(const std::vector<T>& arr, T key, size_t start, size_t end, bool direction);
+    size_t gallopSearch(const std::vector<T>& arr, T key, size_t start, size_t end, bool leftIsSmaller);
     bool isSorted(const std::vector<T>& arr);
 
 
@@ -87,156 +87,148 @@ size_t TimSort<T>::gallopSearch(const std::vector<T>& arr, T key, size_t start, 
 */
 
 
-template <typename T>
-size_t TimSort<T>::gallopSearch(const std::vector<T>& arr, T key, size_t start, size_t end, bool direction) {
-    size_t idx = start;
-    size_t step = 1;
-
-    while (idx + step < end && ((direction && arr[idx + step] <= key) || (!direction && arr[idx + step] >= key))) {
-        step *= 2;
-    }
-    return std::lower_bound(arr.begin() + idx, arr.begin() + std::min(idx + step, end), key) - arr.begin();
-}
-
-
 /*
-template<typename T>
-void TimSort<T>::merge(std::vector<T>& arr, size_t leftStart, size_t mid, size_t rightEnd) {
-    size_t leftSize = mid - leftStart + 1;  // Размер левой части
-    size_t rightSize = rightEnd - mid;     // Размер правой части
+        if (gallopCount >= gallopThreshold) {
+            size_t endRange = isTempArraySource
+                ? gallopSearch(tempArr, arr[bigArrIndex], tempIndex, tempArr.size(), leftIsSmaller)
+                : gallopSearch(arr, tempArr[tempIndex], bigArrIndex, rightEnd + 1, leftIsSmaller);
 
-    // Создаем временные векторы для левой и правой частей
-    std::vector<T> leftArray(leftSize);
-    std::vector<T> rightArray(rightSize);
+            if (leftIsSmaller) {
+                size_t copyCount = endRange - (isTempArraySource ? tempIndex : bigArrIndex) + 1;
+                std::copy((isTempArraySource ? tempArr : arr).begin() + (isTempArraySource ? tempIndex : bigArrIndex),
+                    (isTempArraySource ? tempArr : arr).begin() + endRange,
+                    arr.begin() + destIndex);
+            }
+            else {
+                size_t copyCount = (isTempArraySource ? tempIndex : bigArrIndex) - endRange + 1;
+                std::copy((isTempArraySource ? tempArr : arr).begin() + endRange,
+                    (isTempArraySource ? tempArr : arr).begin() + (isTempArraySource ? tempIndex : bigArrIndex),
+                    arr.begin() + (destIndex - copyCount));
+            }
 
-    // Копируем данные во временные массивы
-    for (size_t i = 0; i < leftSize; ++i) {
-        leftArray[i] = arr[leftStart + i];
-    }
-    for (size_t j = 0; j < rightSize; ++j) {
-        rightArray[j] = arr[mid + 1 + j];
-    }
+            /*
+            if (destIndex + copyCount <= arr.size()) {
+                size_t srcStart = isTempArraySource ? tempIndex : bigArrIndex;
+                if (leftIsSmaller) {
+                    size_t srcEnd = srcStart + copyCount;
 
-    // Слияние временных массивов обратно в arr
-    size_t i = 0;    // Индекс для левой части
-    size_t j = 0;    // Индекс для правой части
-    size_t k = leftStart; // Индекс для основного массива
+                    std::copy((isTempArraySource ? tempArr : arr).begin() + srcStart,
+                        (isTempArraySource ? tempArr : arr).begin() + srcEnd,
+                        arr.begin() + destIndex);
 
-    while (i < leftSize && j < rightSize) {
-        if (leftArray[i] <= rightArray[j]) {
-            arr[k] = leftArray[i];
-            ++i;
+                    destIndex += (srcEnd - srcStart);
+                    if (isTempArraySource) {
+                        tempIndex += (srcEnd - srcStart);
+                    }
+                    else {
+                        bigArrIndex += (srcEnd - srcStart);
+                    }
+                }
+                else {
+                    size_t spaceAvailable = arr.size() - destIndex;
+                    size_t srcStart = isTempArraySource ? tempIndex : bigArrIndex;
+                    size_t validCopyCount = isTempArraySource ? tempArr.size() : rightEnd + 1 - srcStart;
+                    validCopyCount = std::min(spaceAvailable, validCopyCount);
+
+                    // Копируем элементы
+                    std::copy((isTempArraySource ? tempArr : arr).begin() + srcStart,
+                        (isTempArraySource ? tempArr : arr).begin() + srcStart + validCopyCount,
+                        arr.begin() + destIndex);
+
+                    destIndex += validCopyCount;
+                    if (isTempArraySource) {
+                        tempIndex += validCopyCount;
+                    }
+                    else {
+                        bigArrIndex += validCopyCount;
+                    }
+                }
+            }
+
+        }*/
+
+template <typename T>
+size_t TimSort<T>::gallopSearch(const std::vector<T>& arr, T key, size_t start, size_t end, bool leftIsSmaller) {
+    if (leftIsSmaller) {
+        size_t idx = start;
+        size_t step = 1;
+       
+        while (idx + step < end && arr[idx + step] <= key) { //|| (!direction && arr[idx + step] >= key))) {
+            step *= 2;  
         }
-        else {
-            arr[k] = rightArray[j];
-            ++j;
+        return std::upper_bound(arr.begin() + idx, arr.begin() + std::min(idx + step, end), key) - arr.begin();
+    }
+    else {
+        long long idx = start;
+        size_t step = 1;
+
+        while (idx - step >= 0 && arr[idx - step] >= key) { //|| (!direction && arr[idx + step] >= key))) {
+            step *= 2;
         }
-        ++k;
-    }
-
-    // Копируем оставшиеся элементы левой части, если есть
-    while (i < leftSize) {
-        arr[k] = leftArray[i];
-        ++i;
-        ++k;
-    }
-
-    // Копируем оставшиеся элементы правой части, если есть
-    while (j < rightSize) {
-        arr[k] = rightArray[j];
-        ++j;
-        ++k;
+        return std::lower_bound(arr.begin() + std::max(idx - step, size_t(0)), arr.begin() + idx, key) - arr.begin();
     }
 }
-*/
 
 template<typename T>
 void TimSort<T>::merge(std::vector<T>& arr, size_t leftStart, size_t mid, size_t rightEnd) {
     size_t leftSize = mid - leftStart + 1;
     size_t rightSize = rightEnd - mid;
 
-    //bool leftIsSmaller = (leftSize <= rightSize);
+    bool leftIsSmaller = (leftSize <= rightSize);
     
-    //std::vector<T> tempArr = leftIsSmaller
-      //  ? std::vector<T>(arr.begin() + leftStart, arr.begin() + mid + 1)
-        //: std::vector<T>(arr.begin() + mid + 1, arr.begin() + rightEnd + 1);
-        
-    
-    std::vector<T> tempArr = std::vector<T>(arr.begin() + leftStart, arr.begin() + mid + 1);
-    //size_t tempIndex = 0, bigArrIndex = leftIsSmaller ? mid + 1 : leftStart;
-    size_t tempIndex = 0, bigArrIndex = mid + 1;
-    size_t destIndex = leftStart;
+    std::vector<T> tempArr = leftIsSmaller
+        ? std::vector<T>(arr.begin() + leftStart, arr.begin() + mid + 1)
+        : std::vector<T>(arr.begin() + mid + 1, arr.begin() + rightEnd + 1);
+
+    size_t tempIndex = leftIsSmaller ? 0 : rightSize - 1, bigArrIndex = leftIsSmaller ? mid + 1 : mid;
+    size_t destIndex = leftIsSmaller ? leftStart : rightEnd;
     size_t gallopThreshold = 7;
     size_t gallopCount = 0;
     bool isTempArraySource = true;
 
-    while (tempIndex < tempArr.size() && bigArrIndex <= rightEnd ) {
-        if (tempArr[tempIndex] <= arr[bigArrIndex]) {
-            arr[destIndex++] = tempArr[tempIndex++];
-            gallopCount = (isTempArraySource) ? gallopCount + 1 : 1;
-            isTempArraySource = true;
-        }
-        else {
-            arr[destIndex++] = arr[bigArrIndex++];
-            gallopCount = (!isTempArraySource) ? gallopCount + 1 : 1;
-            isTempArraySource = false;
-        }
-        
-        if (gallopCount >= gallopThreshold) {
-            size_t endRange = isTempArraySource
-                ? gallopSearch(tempArr, arr[bigArrIndex], tempIndex, tempArr.size(), true)
-                : gallopSearch(arr, tempArr[tempIndex], bigArrIndex, rightEnd + 1, false);
-
-            size_t copyCount = endRange - (isTempArraySource ? tempIndex : bigArrIndex);
-            if (destIndex + copyCount <= arr.size()) {
-                size_t srcStart = isTempArraySource ? tempIndex : bigArrIndex;
-                size_t srcEnd = srcStart + copyCount;
-
-                if (srcEnd > (isTempArraySource ? tempArr.size() : rightEnd + 1)) {
-                    srcEnd = isTempArraySource ? tempArr.size() : rightEnd + 1;
-                }
-
-                std::copy((isTempArraySource ? tempArr : arr).begin() + srcStart,
-                    (isTempArraySource ? tempArr : arr).begin() + srcEnd,
-                    arr.begin() + destIndex);
-
-                destIndex += (srcEnd - srcStart);
-                if (isTempArraySource) {
-                    tempIndex += (srcEnd - srcStart);
-                }
-                else {
-                    bigArrIndex += (srcEnd - srcStart);
-                }
+    while ((leftIsSmaller && tempIndex < tempArr.size() && bigArrIndex <= rightEnd) || (!leftIsSmaller && tempIndex != SIZE_MAX && bigArrIndex != SIZE_MAX)) {
+        if (leftIsSmaller) {
+            if (tempArr[tempIndex] <= arr[bigArrIndex]) {
+                arr[destIndex++] = tempArr[tempIndex++];
+                gallopCount = (isTempArraySource) ? gallopCount + 1 : 1;
+                isTempArraySource = true;
             }
             else {
-                size_t spaceAvailable = arr.size() - destIndex;
-                size_t srcStart = isTempArraySource ? tempIndex : bigArrIndex;
-                size_t validCopyCount = isTempArraySource ? tempArr.size() : rightEnd + 1 - srcStart;
-                validCopyCount = std::min(spaceAvailable, validCopyCount);
-
-                // Копируем элементы
-                std::copy((isTempArraySource ? tempArr : arr).begin() + srcStart,
-                    (isTempArraySource ? tempArr : arr).begin() + srcStart + validCopyCount,
-                    arr.begin() + destIndex);
-
-                destIndex += validCopyCount;
-                if (isTempArraySource) {
-                    tempIndex += validCopyCount;
-                }
-                else {
-                    bigArrIndex += validCopyCount;
-                }
+                arr[destIndex++] = arr[bigArrIndex++];
+                gallopCount = (!isTempArraySource) ? gallopCount + 1 : 1;
+                isTempArraySource = false;
             }
-
+        }
+        else {
+            if (tempArr[tempIndex] >= arr[bigArrIndex]) {
+                arr[destIndex--] = tempArr[tempIndex--];
+                gallopCount = (isTempArraySource) ? gallopCount + 1 : 1;
+                isTempArraySource = true;
+            }
+            else {
+                arr[destIndex--] = arr[bigArrIndex--];
+                gallopCount = (!isTempArraySource) ? gallopCount + 1 : 1;
+                isTempArraySource = false;
+            }
         }
     }
     
-    if (tempIndex < tempArr.size()) {
-        std::copy(tempArr.begin() + tempIndex, tempArr.end(), arr.begin() + destIndex);
+    if (tempIndex != SIZE_MAX  && tempIndex < tempArr.size()) {
+        if (leftIsSmaller) {
+            std::copy(tempArr.begin() + tempIndex, tempArr.end(), arr.begin() + destIndex);
+        }
+        else {
+            //std::copy(tempArr.begin(), tempArr.begin() + tempIndex + 1, arr.begin());
+        }
     }
 
-    else if (bigArrIndex <= rightEnd) {
-        std::copy(arr.begin() + bigArrIndex, arr.begin() + rightEnd + 1, arr.begin() + destIndex);
+    else if((leftIsSmaller && bigArrIndex != SIZE_MAX && bigArrIndex <= rightEnd) || (!leftIsSmaller && bigArrIndex != SIZE_MAX && bigArrIndex <= rightEnd)) {
+        if (leftIsSmaller) {
+            std::copy(arr.begin() + bigArrIndex, arr.begin() + rightEnd + 1, arr.begin() + destIndex);
+        }
+        else {
+            //std::copy(arr.begin(), arr.begin() + bigArrIndex + 1, arr.begin());
+        }
     }
 }
 
