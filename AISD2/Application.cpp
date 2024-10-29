@@ -36,6 +36,7 @@ void Application::exec(TimSort<int>& timSort)
             std::cout << "Введите максимальное значение диапазона: ";
             std::cin >> maxRange;
 
+            std::cout << '\n';
             if (!std::cin.fail()) {
                 if (minRange > maxRange) {
                     std::cout << "Некорректный диапазон! Минимальное значение должно быть меньше максимального.\n";
@@ -43,6 +44,7 @@ void Application::exec(TimSort<int>& timSort)
 
                 else {
                     data.clear();
+
                     for (size_t i = 0; i < N; ++i) {
                         int randomValue = rand() % (maxRange - minRange + 1) + minRange;
                         data.push_back(randomValue);
@@ -50,13 +52,19 @@ void Application::exec(TimSort<int>& timSort)
 
                     std::cout << "Сгенерированный вектор: ";
                     for (const auto& val : data) std::cout << val << " ";
-                    std::cout << '\n';
+                    std::cout << "\n\n";
 
                     timSort.sort(data);
 
                     std::cout << "Отсортированный вектор: ";
                     for (const auto& val : data) std::cout << val << " ";
-                    std::cout << "\n\n" << timSort.isSorted(data) << '\n';
+
+                    if (timSort.isSorted(data) && data.size() == N) {
+                        std::cout << "\n\nВектор был успешно отсортирован, размеры исходного и отсортированного вектора совпадают\n";
+                    }
+                    else {
+                        std::cout << "К сожалению, вектор не был полностью отсортирован\n";
+                    }
                 }
             }
             std::cin.clear();
