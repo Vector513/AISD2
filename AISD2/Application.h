@@ -8,7 +8,7 @@ public:
     Application();
     ~Application();
 
-    void exec(TimSort<int>& timSort);
+    void exec(TimSort<long long int>& timSort);
 };
 
 #endif // APPLICATION_H

@@ -1,6 +1,4 @@
-﻿//#include <iostream>
-//#include <random>
-#include "Application.h"
+﻿#include "Application.h"
 #include "Windows.h"
 
 int main()
@@ -10,7 +8,7 @@ int main()
     //setlocale(LC_ALL, "Russian");
 
     Application application;
-    TimSort<int> timSort;
+    TimSort<long long int> timSort;
     application.exec(timSort);
 
 }
